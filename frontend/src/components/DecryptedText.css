@@ -1,0 +1,14 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Mono&display=swap");
+
+.scramble-text-font {
+  font-family: "Space Mono", monospace; /* A cool, monospaced font */
+  font-size: 1.5rem; /* You can add other styles too! */
+  color: #2563eb;
+}
+
+.scramble-text-encrypted {
+  font-family: "Space Mono", monospace; /* Keep font the same */
+  font-size: 1.5rem; /* Keep size the same */
+  color: #fff; /* A different color for the animation */
+  /* color: #475569; A different color for the animation */
+}

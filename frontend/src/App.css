@@ -1,3 +1,10 @@
+/* html,
+body,
+#root,
+.App {
+  background: transparent !important;
+} */
+
 /* Global Styles */
 * {
   margin: 0;
@@ -7,13 +14,16 @@
 
 body {
   font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
-  background: linear-gradient(135deg, #0f1419 0%, #1a2332 50%, #2d3748 100%);
+  /* background: linear-gradient(135deg, #0f1419 0%, #1a2332 50%, #2d3748 100%); */
+  background: transparent;
   color: #e2e8f0;
   overflow-x: hidden;
   min-height: 100vh;
 }
 
 .App {
+  position: relative;
+  isolation: isolate;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -28,6 +38,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 100;
+  height: 80px; /* Fixed header height */
 }
 
 .header-content {
@@ -99,22 +110,21 @@ body {
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
-/* Main Content */
+/* Main Content Layout */
 .main-content {
   display: flex;
-  flex: 1;
-  gap: 2rem;
-  padding: 2rem;
-  max-width: 1400px;
-  margin: 0 auto;
-  width: 100%;
+  height: calc(100vh - 80px); /* Full height minus header */
+  overflow: hidden; /* Prevent main content scrolling */
+  position: relative; /* This is crucial for creating a new stacking context */
+  z-index: 1; /* Lifts this layer above the video */
+  background: transparent;
 }
 
-/* Globe Container */
+/* Left Panel - Globe Container (Fixed) */
 .globe-container {
   flex: 1;
   position: relative;
-  background: rgba(15, 20, 25, 0.8);
+  /* background: rgba(15, 20, 25, 0.8); */
   border-radius: 16px;
   overflow: hidden;
   border: 1px solid rgba(226, 232, 240, 0.1);
@@ -122,7 +132,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 600px;
+  margin: 2rem 0 2rem 2rem;
 }
 
 .globe-canvas {
@@ -137,14 +147,16 @@ body {
   position: absolute;
   top: 1rem;
   left: 1rem;
-  background: rgba(15, 20, 25, 0.9);
+  /* background: rgba(15, 20, 25, 0.9); */
+  background: none;
   backdrop-filter: blur(20px);
   border-radius: 12px;
   padding: 1rem;
   border: 1px solid rgba(226, 232, 240, 0.15);
-  max-width: 280px;
-  max-height: 500px;
-  overflow-y: auto;
+  max-width: 300px;
+  max-height: calc(100vh - 200px);
+  display: flex;
+  flex-direction: column;
 }
 
 .satellite-list h3 {
@@ -154,6 +166,12 @@ body {
   margin-bottom: 0.75rem;
   border-bottom: 1px solid rgba(226, 232, 240, 0.1);
   padding-bottom: 0.5rem;
+  flex-shrink: 0;
+}
+
+.satellite-list-items {
+  overflow-y: auto;
+  flex: 1;
 }
 
 .satellite-item {
@@ -204,12 +222,51 @@ body {
   flex-shrink: 0;
 }
 
-/* Right Panel */
+/* Right Panel - Scrollable */
 .right-panel {
   width: 400px;
+  height: 100vh;
+  background: #1a1a1a;
+  border-left: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+}
+
+.right-panel.scrollable {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0; /* Remove padding from scrollable container */
+}
+
+.right-panel-content {
+  padding: 2rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+}
+
+/* Custom scrollbar for right panel */
+.right-panel.scrollable::-webkit-scrollbar {
+  width: 8px;
+}
+
+.right-panel.scrollable::-webkit-scrollbar-track {
+  background: #2a2a2a;
+}
+
+.right-panel.scrollable::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}
+
+.right-panel.scrollable::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+/* Firefox scrollbar */
+.right-panel.scrollable {
+  scrollbar-width: thin;
+  scrollbar-color: #555 #2a2a2a;
 }
 
 .satellite-card {
@@ -218,6 +275,7 @@ body {
   border: 1px solid rgba(226, 232, 240, 0.15);
   border-radius: 16px;
   padding: 1.5rem;
+  flex-shrink: 0;
 }
 
 .satellite-header {
@@ -289,11 +347,13 @@ body {
   border-color: rgba(96, 165, 250, 0.5);
 }
 
-/* Simple Charts */
+/* Charts Container */
 .charts-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  background: rgba(15, 20, 25, 0.8);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(226, 232, 240, 0.15);
+  backdrop-filter: blur(20px);
 }
 
 .simple-chart {
@@ -302,6 +362,7 @@ body {
   border: 1px solid rgba(226, 232, 240, 0.15);
   border-radius: 12px;
   padding: 1rem;
+  margin-bottom: 1rem;
 }
 
 .simple-chart h4 {
@@ -547,15 +608,36 @@ body {
   line-height: 1.4;
 }
 
+/* Satellite label */
+.satellite-label {
+  font-family: Inter, sans-serif;
+  font-weight: bold;
+  text-align: center;
+  white-space: nowrap;
+  user-select: none;
+}
+
 /* Responsive Design */
 @media (max-width: 1200px) {
   .main-content {
     flex-direction: column;
-    padding: 1rem;
+    height: auto;
+    overflow: visible;
+  }
+
+  .globe-container {
+    margin: 1rem;
+    height: 60vh;
   }
 
   .right-panel {
     width: 100%;
+    height: auto;
+    max-height: none;
+  }
+
+  .right-panel.scrollable {
+    overflow-y: visible;
   }
 
   .satellite-stats {
@@ -566,11 +648,21 @@ body {
 @media (max-width: 768px) {
   .header {
     padding: 1rem;
+    height: auto;
   }
 
   .header-content {
     flex-direction: column;
     gap: 1rem;
+  }
+
+  .main-content {
+    height: auto;
+  }
+
+  .globe-container {
+    margin: 1rem;
+    height: 50vh;
   }
 
   .satellite-list {
@@ -579,6 +671,7 @@ body {
     left: auto;
     margin-bottom: 1rem;
     max-width: none;
+    max-height: none;
   }
 
   .satellite-stats {
@@ -598,4 +691,271 @@ body {
   .ai-input {
     flex-direction: column;
   }
+
+  .right-panel-content {
+    padding: 1rem;
+  }
+}
+
+/* Add these styles to your existing App.css */
+
+/* Chart Modal Overlay */
+.chart-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(8px);
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Chart Modal Container */
+.chart-modal {
+  background: rgba(15, 20, 25, 0.98);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(226, 232, 240, 0.2);
+  border-radius: 16px;
+  width: 95vw;
+  max-width: 1400px;
+  height: 85vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideInScale 0.3s ease-out;
+  overflow: hidden;
+}
+
+/* Chart Modal Header */
+.chart-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.1);
+  background: rgba(30, 41, 59, 0.5);
+  flex-shrink: 0;
+}
+
+.chart-modal-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Chart Modal Content */
+.chart-modal-content {
+  flex: 1;
+  padding: 2rem;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chart-modal-content > div {
+  width: 100%;
+  height: 100%;
+  margin-bottom: 0 !important;
+}
+
+/* Chart Wrapper for Expandable Charts */
+.chart-wrapper {
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.chart-wrapper:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.chart-wrapper:hover .expand-icon {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Expand Icon */
+.expand-icon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(59, 130, 246, 0.9);
+  color: white;
+  padding: 8px;
+  border-radius: 8px;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.2s ease;
+  z-index: 10;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Expandable Chart Indicator */
+.expandable-chart::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.8),
+    rgba(29, 78, 216, 0.8)
+  );
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.expandable-chart:hover::after {
+  opacity: 1;
+}
+
+/* Close Button in Modal */
+.chart-modal .close-button {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  font-size: 1.5rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.chart-modal .close-button:hover {
+  background: rgba(239, 68, 68, 0.3);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #fee2e2;
+  transform: scale(1.05);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Enhanced Chart Hover Effects */
+.charts-container .chart-wrapper {
+  margin-bottom: 1rem;
+  background: rgba(15, 20, 25, 0.8);
+  border-radius: 12px;
+  border: 1px solid rgba(226, 232, 240, 0.15);
+  backdrop-filter: blur(20px);
+  position: relative;
+  overflow: hidden;
+}
+
+.charts-container .chart-wrapper::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.1),
+    rgba(29, 78, 216, 0.1)
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.charts-container .chart-wrapper:hover::before {
+  opacity: 1;
+}
+
+/* Responsive Design for Chart Modal */
+@media (max-width: 768px) {
+  .chart-modal {
+    width: 98vw;
+    height: 95vh;
+    border-radius: 12px;
+  }
+
+  .chart-modal-header {
+    padding: 1rem;
+  }
+
+  .chart-modal-header h2 {
+    font-size: 1.25rem;
+  }
+
+  .chart-modal-content {
+    padding: 1rem;
+  }
+
+  .expand-icon {
+    top: 8px;
+    right: 8px;
+    padding: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chart-modal-overlay {
+    padding: 1rem;
+  }
+
+  .chart-modal {
+    height: 90vh;
+  }
+
+  .chart-modal-header h2 {
+    font-size: 1.125rem;
+  }
+}
+
+.background-video {
+  position: fixed; /* Stays in place even when scrolling */
+  top: 0;
+  left: 0;
+  width: 100vw; /* 100% of the viewport width */
+  height: 100vh; /* 100% of the viewport height */
+  object-fit: cover; /* Covers the entire screen without stretching */
+  z-index: -1; /* Sits behind all other content */
 }
