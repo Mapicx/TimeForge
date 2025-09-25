@@ -5,28 +5,26 @@ import { Button } from "./components/ui/button";
 import { Card } from "./components/ui/card";
 import { Badge } from "./components/ui/badge";
 import { Input } from "./components/ui/input";
-import { Dialog } from "./components/ui/dialog";
 import {
   Satellite,
-  Globe,
-  Activity,
   Bot,
-  TrendingUp,
   AlertTriangle,
   BarChart3,
   X,
+  Activity,
 } from "lucide-react";
 import ThreeGlobe from "./components/ThreeGlobe";
 import PredictionChart from "./components/PredictionChart";
-import Galaxy from "./components/Galaxy";
 import DecryptedText from "./components/DecryptedText";
 import "./components/DecryptedText.css";
 import videoBackground from "./assets/galaxy3.mp4";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL =
+  process.env.REACT_APP_BACKEND_URL || "http://127.0.0.1:8000";
 const API = `${BACKEND_URL}/api`;
 
-// PROTOTYPE CONFIGURATION
+/*
+// PROTOTYPE CONFIGURATION (Commented Out)
 const USE_MOCK_DATA = true;
 const MOCK_DATA_CONFIG = {
   HISTORICAL_HOURS: 12,
@@ -40,81 +38,56 @@ const MOCK_DATA_CONFIG = {
     BeiDou: { clock: [1.3, 2.2], orbit: [3.0, 4.8] },
   },
 };
+*/
 
 function App() {
   const [satellites, setSatellites] = useState([]);
   const [selectedSatellite, setSelectedSatellite] = useState(null);
   const [satelliteSummary, setSatelliteSummary] = useState(null);
   const [predictions, setPredictions] = useState([]);
-  const [historicalData, setHistoricalData] = useState([]);
   const [showAIAgent, setShowAIAgent] = useState(false);
   const [agentQuery, setAgentQuery] = useState("");
   const [agentResponse, setAgentResponse] = useState(null);
   const [agentLoading, setAgentLoading] = useState(false);
   const [constellationFilter, setConstellationFilter] = useState("all");
   const [expandedChart, setExpandedChart] = useState(null);
+  const [error, setError] = useState(null);
 
-  // Fetch satellites data
   useEffect(() => {
     fetchSatellites();
   }, []);
 
   const fetchSatellites = async () => {
     try {
+      setError(null);
       const response = await axios.get(`${API}/satellites`);
       setSatellites(response.data);
     } catch (error) {
       console.error("Error fetching satellites:", error);
-      // Fallback mock data for development
-      const mockSatellites = [
-        { satellite_id: "G01", constellation: "GPS" },
-        { satellite_id: "G02", constellation: "GPS" },
-        { satellite_id: "R01", constellation: "GLONASS" },
-        { satellite_id: "E01", constellation: "Galileo" },
-        { satellite_id: "C01", constellation: "BeiDou" },
-        { satellite_id: "G03", constellation: "GPS" },
-        { satellite_id: "R02", constellation: "GLONASS" },
-        { satellite_id: "E02", constellation: "Galileo" },
-        { satellite_id: "G04", constellation: "GPS" },
-        { satellite_id: "R03", constellation: "GLONASS" },
-        { satellite_id: "E03", constellation: "Galileo" },
-        { satellite_id: "C02", constellation: "BeiDou" },
-        { satellite_id: "G05", constellation: "GPS" },
-        { satellite_id: "R04", constellation: "GLONASS" },
-        { satellite_id: "E04", constellation: "Galileo" },
-        { satellite_id: "C03", constellation: "BeiDou" },
-        { satellite_id: "G06", constellation: "GPS" },
-        { satellite_id: "R05", constellation: "GLONASS" },
-        { satellite_id: "E05", constellation: "Galileo" },
-        { satellite_id: "C04", constellation: "BeiDou" },
-      ];
-      setSatellites(mockSatellites);
+      setError("Could not connect to the mission control server.");
     }
   };
 
   const fetchSatelliteSummary = async (satelliteId) => {
     try {
-      if (USE_MOCK_DATA) {
-        generateMockData(satelliteId);
-      } else {
-        const [summaryResponse, historicalResponse] = await Promise.all([
-          axios.get(`${API}/satellite/${satelliteId}/summary`),
-          axios.get(`${API}/satellite/${satelliteId}/historical`),
-        ]);
-
-        setSatelliteSummary(summaryResponse.data);
-        setPredictions(summaryResponse.data.predictions || []);
-        setHistoricalData(historicalResponse.data.historical || []);
-      }
+      setError(null);
+      const response = await axios.get(
+        `${API}/satellite/${satelliteId}/summary`
+      );
+      setSatelliteSummary(response.data);
+      setPredictions(response.data.predictions || []);
     } catch (error) {
       console.error("Error fetching satellite data:", error);
-      generateMockData(satelliteId);
+      setError(`Failed to fetch data for satellite ${satelliteId}.`);
+      setSatelliteSummary(null);
+      setPredictions([]);
     }
   };
 
+  /*
+  // All mock data generation has been commented out.
   const generateMockData = (satelliteId) => {
     const now = new Date();
-
     const constellation =
       satelliteId.charAt(0) === "G"
         ? "GPS"
@@ -196,14 +169,15 @@ function App() {
     const avgOrbitError =
       orbitErrors.reduce((sum, val) => sum + val, 0) / orbitErrors.length;
 
-    setHistoricalData(historical);
+    // This would need historicalData state to be added back if used
+    // setHistoricalData(historical);
     setPredictions(predicted);
     setSatelliteSummary({
       satellite_id: satelliteId,
       constellation: constellation,
       summary: {
-        message: USE_MOCK_DATA ? "Prototype mock data" : "Real satellite data",
-        data_source: USE_MOCK_DATA ? "mock" : "api",
+        message: "Prototype mock data",
+        data_source: "mock",
         peak_clock_error: peakClockError,
         peak_orbit_error: peakOrbitError,
         avg_clock_error: avgClockError,
@@ -212,6 +186,7 @@ function App() {
       },
     });
   };
+  */
 
   const handleSatelliteClick = (satellite) => {
     setSelectedSatellite(satellite);
@@ -222,7 +197,6 @@ function App() {
     setSelectedSatellite(null);
     setSatelliteSummary(null);
     setPredictions([]);
-    setHistoricalData([]);
   };
 
   const handleChartExpand = (chartData, chartTitle, yLabel) => {
@@ -239,8 +213,8 @@ function App() {
 
   const handleAIQuery = async () => {
     if (!agentQuery.trim()) return;
-
     setAgentLoading(true);
+    setAgentResponse(null);
     try {
       const response = await axios.post(`${API}/agent/query`, {
         prompt: agentQuery,
@@ -252,32 +226,31 @@ function App() {
       });
 
       const jobId = response.data.job_id;
-
       const pollResults = async () => {
         try {
           const resultResponse = await axios.get(
             `${API}/agent/result/${jobId}`
           );
           const job = resultResponse.data;
-
           if (job.status === "completed") {
             setAgentResponse(job.results);
             setAgentLoading(false);
           } else if (job.status === "failed") {
-            setAgentResponse({ error: job.error });
+            setAgentResponse({ error: job.error || "Analysis failed." });
             setAgentLoading(false);
           } else {
             setTimeout(pollResults, 2000);
           }
-        } catch (error) {
-          console.error("Error polling results:", error);
+        } catch (pollError) {
+          console.error("Error polling AI results:", pollError);
+          setAgentResponse({ error: "Could not retrieve analysis results." });
           setAgentLoading(false);
         }
       };
-
-      setTimeout(pollResults, 1000);
+      setTimeout(pollResults, 500);
     } catch (error) {
       console.error("Error submitting AI query:", error);
+      setAgentResponse({ error: "Failed to submit query to AI Agent." });
       setAgentLoading(false);
     }
   };
@@ -297,14 +270,12 @@ function App() {
       ? satellites
       : satellites.filter((sat) => sat.constellation === constellationFilter);
 
+  // This function now renders both charts.
+  // The orbit chart will be empty if the API doesn't provide pred_orbit_error_m.
   const renderPredictionCharts = () => {
-    if (!predictions.length && !historicalData.length) return null;
+    if (!predictions.length) return null;
 
     const clockData = {
-      historical: historicalData.map((d) => ({
-        timestamp: d.timestamp,
-        value: d.clock_error,
-      })),
       predicted: predictions.map((p) => ({
         timestamp: p.timestamp,
         value: p.pred_clock_error_m,
@@ -312,13 +283,9 @@ function App() {
     };
 
     const orbitData = {
-      historical: historicalData.map((d) => ({
-        timestamp: d.timestamp,
-        value: d.orbit_error,
-      })),
       predicted: predictions.map((p) => ({
         timestamp: p.timestamp,
-        value: p.pred_orbit_error_m,
+        value: p.pred_orbit_error_m, // This will be undefined if not in API response
       })),
     };
 
@@ -329,15 +296,15 @@ function App() {
           onClick={() =>
             handleChartExpand(
               clockData,
-              "Clock Error Analysis",
+              "Clock Error Prediction",
               "Error (nanoseconds)"
             )
           }
         >
           <PredictionChart
-            historicalData={clockData.historical}
+            historicalData={[]}
             predictedData={clockData.predicted}
-            title="Clock Error Analysis"
+            title="Clock Error Prediction"
             yLabel="Error (nanoseconds)"
             isExpandable={true}
           />
@@ -347,15 +314,15 @@ function App() {
           onClick={() =>
             handleChartExpand(
               orbitData,
-              "Orbit Error Analysis",
+              "Orbit Error Prediction",
               "Error (meters)"
             )
           }
         >
           <PredictionChart
-            historicalData={orbitData.historical}
+            historicalData={[]}
             predictedData={orbitData.predicted}
-            title="Orbit Error Analysis"
+            title="Orbit Error Prediction"
             yLabel="Error (meters)"
             isExpandable={true}
           />
@@ -381,7 +348,7 @@ function App() {
       <header className="header" style={{ position: "relative", zIndex: 10 }}>
         <div className="header-content">
           <div className="logo">
-            <div style={{ display: "flex" }}>
+            <div style={{ display: "flex", alignItems: "center" }}>
               <Satellite className="logo-icon" />
               <DecryptedText
                 text=" GNSS Mission Control"
@@ -434,6 +401,11 @@ function App() {
             }}
           >
             <h3>Active Satellites ({filteredSatellites.length})</h3>
+            {error && (
+              <div className="error-message-inline">
+                <AlertTriangle size={14} /> {error}
+              </div>
+            )}
             <div className="satellite-list-items">
               {filteredSatellites.map((satellite) => (
                 <div
@@ -518,12 +490,11 @@ function App() {
                 {satelliteSummary && (
                   <div className="satellite-stats">
                     <div className="stat-item">
-                      <span className="stat-label">Peak Clock Error</span>
+                      <span className="stat-label">Avg Clock Error</span>
                       <span className="stat-value">
-                        {satelliteSummary.summary.peak_clock_error?.toFixed(
-                          4
-                        ) || "0.0000"}
-                        m
+                        {satelliteSummary.summary.avg_clock_error?.toFixed(4) ||
+                          "0.0000"}{" "}
+                        ns
                       </span>
                     </div>
                     <div className="stat-item">
@@ -531,15 +502,7 @@ function App() {
                       <span className="stat-value">
                         {satelliteSummary.summary.peak_orbit_error?.toFixed(
                           2
-                        ) || "0.00"}
-                        m
-                      </span>
-                    </div>
-                    <div className="stat-item">
-                      <span className="stat-label">Avg Clock Error</span>
-                      <span className="stat-value">
-                        {satelliteSummary.summary.avg_clock_error?.toFixed(4) ||
-                          "0.0000"}
+                        ) || "0.00"}{" "}
                         m
                       </span>
                     </div>
@@ -591,7 +554,6 @@ function App() {
                 ×
               </button>
             </div>
-
             <div className="ai-examples">
               <h4>Example Queries:</h4>
               <div className="example-buttons">
@@ -599,16 +561,16 @@ function App() {
                   variant="ghost"
                   size="sm"
                   onClick={() =>
-                    setAgentQuery("Compare G01 vs R01 clock error volatility")
+                    setAgentQuery("Compare G01 vs R01 orbit error")
                   }
                 >
-                  Compare satellites volatility
+                  Compare satellite errors
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() =>
-                    setAgentQuery("Find satellites with orbit error >1m")
+                    setAgentQuery("Find satellites with peak orbit error > 2m")
                   }
                 >
                   Find high orbit errors
@@ -626,7 +588,6 @@ function App() {
                 </Button>
               </div>
             </div>
-
             <div className="ai-input">
               <Input
                 placeholder="Ask me about satellite performance, errors, comparisons..."
@@ -638,7 +599,6 @@ function App() {
                 {agentLoading ? "Analyzing..." : "Analyze"}
               </Button>
             </div>
-
             {agentResponse && (
               <div className="ai-response">
                 <h4>Analysis Results:</h4>
@@ -652,22 +612,6 @@ function App() {
                     <p className="response-text">
                       {agentResponse.text_summary}
                     </p>
-
-                    {agentResponse.charts &&
-                      agentResponse.charts.length > 0 && (
-                        <div className="response-charts">
-                          {agentResponse.charts.map((chart, index) => (
-                            <div key={index} className="chart-result">
-                              <h5>{chart.name}</h5>
-                              <img
-                                src={`${BACKEND_URL}${chart.url}`}
-                                alt={chart.name}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
                     {agentResponse.statistics && (
                       <div className="response-stats">
                         <h5>Key Statistics:</h5>
@@ -701,7 +645,7 @@ function App() {
             </div>
             <div className="chart-modal-content">
               <PredictionChart
-                historicalData={expandedChart.data.historical}
+                historicalData={[]}
                 predictedData={expandedChart.data.predicted}
                 title={expandedChart.title}
                 yLabel={expandedChart.yLabel}

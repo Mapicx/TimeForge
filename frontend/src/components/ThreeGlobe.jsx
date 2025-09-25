@@ -137,7 +137,7 @@ export default function ThreeGlobe() {
     // Animation loop with trail updates
     function animate() {
       requestAnimationFrame(animate);
-      earth.rotation.y += 0.015;
+      earth.rotation.y += 0.0055;
 
       satellites.forEach((sat, index) => {
         sat.pivot.rotation.z += sat.speed;
