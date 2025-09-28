@@ -18,7 +18,7 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 # The server now uses a CSV file as its primary data source.
-CSV_FILE_PATH = ROOT_DIR / "suyash_gandu.csv"
+CSV_FILE_PATH = ROOT_DIR / "data/suyash_gandu.csv"
 prediction_df = None
 
 # In-memory storage for simulated AI agent jobs

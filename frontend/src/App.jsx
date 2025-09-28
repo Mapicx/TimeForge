@@ -19,9 +19,14 @@ import DecryptedText from "./components/DecryptedText";
 import "./components/DecryptedText.css";
 import videoBackground from "./assets/galaxy3.mp4";
 
-const BACKEND_URL =
-  process.env.REACT_APP_BACKEND_URL || "http://127.0.0.1:8000";
-const API = `${BACKEND_URL}/api`;
+// Configure multiple backend URLs
+const DATA_BACKEND_URL =
+  process.env.REACT_APP_DATA_BACKEND_URL || "http://127.0.0.1:8000";
+const AI_BACKEND_URL =
+  process.env.REACT_APP_AI_BACKEND_URL || "http://127.0.0.1:8001";
+
+const DATA_API = `${DATA_BACKEND_URL}/api`;
+const AI_API = `${AI_BACKEND_URL}`; // Updated: Remove /api since your FastAPI routes are at root level
 
 /*
 // PROTOTYPE CONFIGURATION (Commented Out)
@@ -60,7 +65,7 @@ function App() {
   const fetchSatellites = async () => {
     try {
       setError(null);
-      const response = await axios.get(`${API}/satellites`);
+      const response = await axios.get(`${DATA_API}/satellites`);
       setSatellites(response.data);
     } catch (error) {
       console.error("Error fetching satellites:", error);
@@ -72,7 +77,7 @@ function App() {
     try {
       setError(null);
       const response = await axios.get(
-        `${API}/satellite/${satelliteId}/summary`
+        `${DATA_API}/satellite/${satelliteId}/summary`
       );
       setSatelliteSummary(response.data);
       setPredictions(response.data.predictions || []);
@@ -211,46 +216,42 @@ function App() {
     setExpandedChart(null);
   };
 
+  // Updated AI query function to match your FastAPI backend structure
   const handleAIQuery = async () => {
     if (!agentQuery.trim()) return;
     setAgentLoading(true);
     setAgentResponse(null);
+
     try {
-      const response = await axios.post(`${API}/agent/query`, {
-        prompt: agentQuery,
-        context: {
-          satellite_ids: selectedSatellite
-            ? [selectedSatellite.satellite_id]
-            : [],
-        },
+      // Updated to match your FastAPI backend endpoint structure
+      const response = await axios.post(`${AI_API}/chat`, {
+        query: agentQuery,
+        format_type: "text", // Using "text" format as defined in your ChatRequest model
       });
 
-      const jobId = response.data.job_id;
-      const pollResults = async () => {
-        try {
-          const resultResponse = await axios.get(
-            `${API}/agent/result/${jobId}`
-          );
-          const job = resultResponse.data;
-          if (job.status === "completed") {
-            setAgentResponse(job.results);
-            setAgentLoading(false);
-          } else if (job.status === "failed") {
-            setAgentResponse({ error: job.error || "Analysis failed." });
-            setAgentLoading(false);
-          } else {
-            setTimeout(pollResults, 2000);
-          }
-        } catch (pollError) {
-          console.error("Error polling AI results:", pollError);
-          setAgentResponse({ error: "Could not retrieve analysis results." });
-          setAgentLoading(false);
-        }
-      };
-      setTimeout(pollResults, 500);
+      // Updated to match your ChatResponse model structure
+      if (response.data.success) {
+        setAgentResponse({
+          text_summary: response.data.text,
+          timestamp: new Date().toISOString(),
+          satellite_data: response.data.data,
+          summary: response.data.summary,
+          response_type: response.data.response_type,
+        });
+      } else {
+        setAgentResponse({
+          error: response.data.text || "Failed to get response from AI Agent.",
+        });
+      }
+      setAgentLoading(false);
     } catch (error) {
       console.error("Error submitting AI query:", error);
-      setAgentResponse({ error: "Failed to submit query to AI Agent." });
+      setAgentResponse({
+        error:
+          error.response?.data?.detail ||
+          error.response?.data?.text ||
+          "Failed to submit query to AI Agent.",
+      });
       setAgentLoading(false);
     }
   };
@@ -351,7 +352,7 @@ function App() {
             <div style={{ display: "flex", alignItems: "center" }}>
               <Satellite className="logo-icon" />
               <DecryptedText
-                text=" GNSS Mission Control"
+                text=" TimeForge | GNSS System"
                 animateOn="view"
                 revealDirection="center"
                 maxIterations={25}
@@ -492,15 +493,16 @@ function App() {
                     <div className="stat-item">
                       <span className="stat-label">Avg Clock Error</span>
                       <span className="stat-value">
-                        {satelliteSummary.summary.avg_clock_error?.toFixed(4) ||
-                          "0.0000"}{" "}
+                        {satelliteSummary.summary?.avg_clock_error?.toFixed(
+                          4
+                        ) || "0.0000"}{" "}
                         ns
                       </span>
                     </div>
                     <div className="stat-item">
                       <span className="stat-label">Peak Orbit Error</span>
                       <span className="stat-value">
-                        {satelliteSummary.summary.peak_orbit_error?.toFixed(
+                        {satelliteSummary.summary?.peak_orbit_error?.toFixed(
                           2
                         ) || "0.00"}{" "}
                         m
@@ -509,7 +511,7 @@ function App() {
                     <div className="stat-item">
                       <span className="stat-label">Data Points</span>
                       <span className="stat-value">
-                        {satelliteSummary.summary.data_points || 0}
+                        {satelliteSummary.summary?.data_points || 0}
                       </span>
                     </div>
                   </div>
@@ -561,7 +563,7 @@ function App() {
                   variant="ghost"
                   size="sm"
                   onClick={() =>
-                    setAgentQuery("Compare G01 vs R01 orbit error")
+                    setAgentQuery("Compare G01 vs G12 orbit error")
                   }
                 >
                   Compare satellite errors
@@ -570,10 +572,10 @@ function App() {
                   variant="ghost"
                   size="sm"
                   onClick={() =>
-                    setAgentQuery("Find satellites with peak orbit error > 2m")
+                    setAgentQuery("Find satellites with peak clock error > 2m")
                   }
                 >
-                  Find high orbit errors
+                  Find high clock errors
                 </Button>
                 <Button
                   variant="ghost"
@@ -612,12 +614,23 @@ function App() {
                     <p className="response-text">
                       {agentResponse.text_summary}
                     </p>
-                    {agentResponse.statistics && (
-                      <div className="response-stats">
-                        <h5>Key Statistics:</h5>
-                        <pre>
-                          {JSON.stringify(agentResponse.statistics, null, 2)}
-                        </pre>
+                    {agentResponse.satellite_data &&
+                      Object.keys(agentResponse.satellite_data).length > 0 && (
+                        <div className="response-stats">
+                          <h5>Satellite Data:</h5>
+                          <pre>
+                            {JSON.stringify(
+                              agentResponse.satellite_data,
+                              null,
+                              2
+                            )}
+                          </pre>
+                        </div>
+                      )}
+                    {agentResponse.summary && (
+                      <div className="response-summary">
+                        <h5>Summary:</h5>
+                        <p>{agentResponse.summary}</p>
                       </div>
                     )}
                   </div>
